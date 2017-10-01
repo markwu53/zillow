@@ -1,61 +1,60 @@
-col_name	data_type	comment
-logerror            	double              	                    
-transactiondate     	string              	                    
-parcelid            	bigint              	                    
-airconditioningtypeid	bigint              	                    
-architecturalstyletypeid	string              	                    
-basementsqft        	string              	                    
-bathroomcnt         	double              	                    
-bedroomcnt          	double              	                    
-buildingclasstypeid 	bigint              	                    
-buildingqualitytypeid	bigint              	                    
-calculatedbathnbr   	double              	                    
-decktypeid          	string              	                    
-finishedfloor1squarefeet	string              	                    
-calculatedfinishedsquarefeet	double              	                    
-finishedsquarefeet12	bigint              	                    
-finishedsquarefeet13	string              	                    
-finishedsquarefeet15	bigint              	                    
-finishedsquarefeet50	string              	                    
-finishedsquarefeet6 	string              	                    
-fips                	bigint              	                    
-fireplacecnt        	string              	                    
-fullbathcnt         	bigint              	                    
-garagecarcnt        	string              	                    
-garagetotalsqft     	string              	                    
-hashottuborspa      	string              	                    
-heatingorsystemtypeid	bigint              	                    
-latitude            	bigint              	                    
-longitude           	bigint              	                    
-lotsizesquarefeet   	double              	                    
-poolcnt             	string              	                    
-poolsizesum         	string              	                    
-pooltypeid10        	string              	                    
-pooltypeid2         	string              	                    
-pooltypeid7         	string              	                    
-propertycountylandusecode	string              	                    
-propertylandusetypeid	bigint              	                    
-propertyzoningdesc  	string              	                    
-rawcensustractandblock	double              	                    
-regionidcity        	bigint              	                    
-regionidcounty      	bigint              	                    
-regionidneighborhood	bigint              	                    
-regionidzip         	bigint              	                    
-roomcnt             	double              	                    
-storytypeid         	string              	                    
-threequarterbathnbr 	string              	                    
-typeconstructiontypeid	string              	                    
-unitcnt             	bigint              	                    
-yardbuildingsqft17  	string              	                    
-yardbuildingsqft26  	string              	                    
-yearbuilt           	double              	                    
-numberofstories     	bigint              	                    
-fireplaceflag       	string              	                    
-structuretaxvaluedollarcnt	double              	                    
-taxvaluedollarcnt   	double              	                    
-assessmentyear      	bigint              	                    
-landtaxvaluedollarcnt	double              	                    
-taxamount           	double              	                    
-taxdelinquencyflag  	string              	                    
-taxdelinquencyyear  	bigint              	                    
-censustractandblock 	string              	                    
+logerror,
+transaction_date,
+parcel_id,
+airconditioning_type_id,
+architectural_style_type_id,
+basement_sqft,
+bathroom_cnt,
+bedroom_cnt,
+building_class_type_id,
+building_quality_type_id,
+calculated_bath_nbr,
+deck_type_id,
+finished_floor_1_squarefeet,
+calculated_finished_squarefeet,
+finished_squarefeet_12,
+finished_squarefeet_13,
+finished_squarefeet_15,
+finished_squarefeet_50,
+finished_squarefeet_6,
+fips,
+fireplace_cnt,
+fullbath_cnt,
+garage_car_cnt,
+garage_total_sqft,
+hashottuborspa,
+heating_or_system_type_id,
+latitude,
+longitude,
+lot_size_squarefeet,
+pool_cnt,
+pool_size_sum,
+pool_type_id_10,
+pool_type_id_2,
+pool_type_id_7,
+property_county_land_use_code,
+property_land_use_type_id,
+property_zoning_desc,
+raw_census_tract_and_block,
+region_id_city,
+region_id_county,
+region_id_neighborhood,
+region_id_zip,
+room_cnt,
+story_type_id,
+three_quarter_bath_nbr,
+type_construction_type_id,
+unit_cnt,
+yard_building_sqft_17,
+yard_building_sqft_26,
+year_built,
+number_of_stories,
+fire_place_flag,
+structure_tax_value_dollar_cnt,
+tax_value_dollar_cnt,
+assessment_year,
+land_tax_value_dollar_cnt,
+tax_amount,
+tax_delinquency_flag,
+tax_delinquency_year,
+census_tract_and_block
