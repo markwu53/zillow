@@ -1,5 +1,6 @@
 library(readr)
-dataset <- read_csv("~/git/zillow/zillow_train.csv")
+dataset <- read_csv("/Users/T162880/Documents/Programs/git/zillow/zillow_train.csv")
+full <- read_csv("/Users/T162880/Documents/Programs/zillow/properties_2016.csv")
 #View(zillow_train)
 dataset75 = subset(dataset, dataset$logerror < .07)
 dataset75 = subset(dataset75, dataset75$logerror > -.07)
