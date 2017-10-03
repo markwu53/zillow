@@ -336,9 +336,12 @@ def sqrt_class(sqrt):
         sb += step
 
 def bucket_sqrt():
-    properties_file = "/Users/T162880/Documents/Programs/zillow/properties_2016.csv"
-    train_file = "/Users/T162880/Documents/Programs/zillow/train_2016_v2.csv"
-    my_submission_file = "/Users/T162880/Documents/Programs/zillow/my_submission.csv"
+    #properties_file = "/Users/T162880/Documents/Programs/zillow/properties_2016.csv"
+    #train_file = "/Users/T162880/Documents/Programs/zillow/train_2016_v2.csv"
+    #my_submission_file = "/Users/T162880/Documents/Programs/zillow/my_submission.csv"
+    properties_file = "/Users/apple/Documents/zillow/data/properties_2016.csv"
+    train_file = "/Users/apple/Documents/zillow/data/train_2016_v2.csv"
+    my_submission_file = "/Users/apple/Documents/zillow/zillow_submission/my_submission.csv"
     columns = zillowcolumns()
     train_dict = dict()
     sqrt_dict = dict()
