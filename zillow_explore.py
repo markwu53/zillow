@@ -395,5 +395,47 @@ def bucket_sqrt():
             fdw.write("{p},{a},{a},{a},{a},{a},{a}\n".format(p=parcelid, a=logerror))
     print("done")
 
+def compare():
+    """
+    with open(dir + sample_submission) as fd: lines = fd.readlines()[1:]
+    sample_set = set()
+    for line in lines:
+        line = line.strip()
+        if len(line) == 0: continue
+        values = line.split(",")
+        sample_set.add(values[0])
+        """
+    with open(dir + properties_2016) as fd: lines = fd.readlines()[1:]
+    set_2016 = set()
+    for line in lines:
+        line = line.strip()
+        if len(line) == 0: continue
+        values = line.split(",")
+        parcelid = values[zcolumns["parcelid"]]
+        if "".join(values[1:]) == "": set_2016.add(parcelid)
+    with open(dir + properties_2017) as fd: lines = fd.readlines()[1:]
+    set_2017 = set()
+    for line in lines:
+        line = line.strip()
+        if len(line) == 0: continue
+        values = line.split(",")
+        parcelid = values[zcolumns["parcelid"]]
+        if "".join(values[1:]) == "": set_2017.add(parcelid)
+    #if len(set_2016) == len(sample_set): print("same number")
+    print(len(set_2016), len(set_2017))
+    d1 = set_2016 - set_2017
+    d2 = set_2017 - set_2016
+    print(len(d1), len(d2))
+    """
+    11437 2932
+    11437 2932
+    """
+
+    """
+    for parcelid in sample_set:
+        if parcelid not in set_2016:
+            print(parcelid)
+            """
+
 if __name__ == "__main__":
     bucket_sqrt()

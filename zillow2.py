@@ -4,10 +4,12 @@ properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
 train_2017 = "train_2017.csv"
 sample_submission = "sample_submission.csv"
-my_submission_file = "my_submission.csv"
+my_submission = "my_submission.csv"
 zillow_columns = """
 parcelid,airconditioningtypeid,architecturalstyletypeid,basementsqft,bathroomcnt,bedroomcnt,buildingclasstypeid,buildingqualitytypeid,calculatedbathnbr,decktypeid,finishedfloor1squarefeet,calculatedfinishedsquarefeet,finishedsquarefeet12,finishedsquarefeet13,finishedsquarefeet15,finishedsquarefeet50,finishedsquarefeet6,fips,fireplacecnt,fullbathcnt,garagecarcnt,garagetotalsqft,hashottuborspa,heatingorsystemtypeid,latitude,longitude,lotsizesquarefeet,poolcnt,poolsizesum,pooltypeid10,pooltypeid2,pooltypeid7,propertycountylandusecode,propertylandusetypeid,propertyzoningdesc,rawcensustractandblock,regionidcity,regionidcounty,regionidneighborhood,regionidzip,roomcnt,storytypeid,threequarterbathnbr,typeconstructiontypeid,unitcnt,yardbuildingsqft17,yardbuildingsqft26,yearbuilt,numberofstories,fireplaceflag,structuretaxvaluedollarcnt,taxvaluedollarcnt,assessmentyear,landtaxvaluedollarcnt,taxamount,taxdelinquencyflag,taxdelinquencyyear,censustractandblock
 """
+overall_mean = "0.0115"
+low_sample = 20
 
 def zillowcolumns():
     columns = zillow_columns.strip().split(sep=",")
@@ -43,8 +45,18 @@ def cat_year(value):
     if year >= 2000 and year < 2010: return 9
     return 0
 
+def cat_dollar(value):
+    try:
+        dollar = float(value)
+    except:
+        return 0
+    if dollar < 10000.0: return 0
+    if dollar > 2000000.0: return 0
+    if dollar < 500000.0: return 1
+    return 2
+
 def train_dict():
-    with open(train_file) as fd: lines = fd.readlines()[1:]
+    with open(dir+train_2016) as fd: lines = fd.readlines()[1:]
     lines = [ line.strip().split(",") for line in lines if len(line.strip()) != 0 ]
     tdict = { values[0]: float(values[1]) for values in lines }
     return tdict
@@ -52,12 +64,13 @@ def train_dict():
 features = [
           ["yearbuilt", cat_year, ],
           ["calculatedfinishedsquarefeet", cat_sqrt, ],
+          ["taxvaluedollarcnt", cat_dollar, ],
 ]
 
 def bucket_mean():
     bset = dict()
     tdict = train_dict()
-    with open(properties_file) as fd: lines = fd.readlines()[1:]
+    with open(dir+properties_2016) as fd: lines = fd.readlines()[1:]
     for line in lines:
         line = line.strip()
         if len(line) == 0: continue
@@ -67,7 +80,7 @@ def bucket_mean():
         index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
         if index not in bset: bset[index] = list()
         bset[index].append(tdict[parcelid])
-    bmean = { index: "0.0115" if len(elist) < 20
+    bmean = { index: overall_mean if len(elist) < low_sample
              else "{:.4f}".format(sum(elist)/float(len(elist)))
              for index, elist in bset.items() }
     return bmean
@@ -75,7 +88,7 @@ def bucket_mean():
 def bucket():
     bmean = bucket_mean()
     print(bmean)
-    with open(properties_file) as fd, open(my_submission_file, "w") as fdw:
+    with open(dir+properties_2016) as fd, open(dir+my_submission, "w") as fdw:
         fdw.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
         header = fd.readline()
         ln = 0
@@ -89,51 +102,9 @@ def bucket():
             values = line.split(",")
             parcelid = values[zcolumns["parcelid"]]
             bucket_index = tuple([ feature[1](values[zcolumns[feature[0]]]) for feature in features ])
-            logerror = bmean[bucket_index] if bucket_index in bmean else "0.0115"
+            logerror = bmean[bucket_index] if bucket_index in bmean else overall_mean
             fdw.write("{p},{a},{a},{a},{a},{a},{a}\n".format(p=parcelid, a=logerror))
 
-def compare():
-    """
-    with open(dir + sample_submission) as fd: lines = fd.readlines()[1:]
-    sample_set = set()
-    for line in lines:
-        line = line.strip()
-        if len(line) == 0: continue
-        values = line.split(",")
-        sample_set.add(values[0])
-        """
-    with open(dir + properties_2016) as fd: lines = fd.readlines()[1:]
-    set_2016 = set()
-    for line in lines:
-        line = line.strip()
-        if len(line) == 0: continue
-        values = line.split(",")
-        parcelid = values[zcolumns["parcelid"]]
-        if "".join(values[1:]) == "": set_2016.add(parcelid)
-    with open(dir + properties_2017) as fd: lines = fd.readlines()[1:]
-    set_2017 = set()
-    for line in lines:
-        line = line.strip()
-        if len(line) == 0: continue
-        values = line.split(",")
-        parcelid = values[zcolumns["parcelid"]]
-        if "".join(values[1:]) == "": set_2017.add(parcelid)
-    #if len(set_2016) == len(sample_set): print("same number")
-    print(len(set_2016), len(set_2017))
-    d1 = set_2016 - set_2017
-    d2 = set_2017 - set_2016
-    print(len(d1), len(d2))
-    """
-    11437 2932
-    11437 2932
-    """
-
-    """
-    for parcelid in sample_set:
-        if parcelid not in set_2016:
-            print(parcelid)
-            """
-
 if __name__ == "__main__":
-    compare()
+    bucket()
     print("done")
