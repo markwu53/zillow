@@ -1,4 +1,5 @@
 dir = "/Users/apple/Documents/zillow/data/"
+dir = "/Users/T162880/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -10,6 +11,26 @@ parcelid,airconditioningtypeid,architecturalstyletypeid,basementsqft,bathroomcnt
 """
 overall_mean = "0.0115"
 low_sample = 500
+
+useful_columns = """
+logerror,
+architectural_style_type_id,
+basement_sqft,
+bathroom_cnt,
+bedroom_cnt,
+building_class_type_id,
+building_quality_type_id,
+calculated_bath_nbr,
+garage_car_cnt,
+latitude,
+longitude,
+lot_size_squarefeet,
+region_id_zip,
+number_of_stories,
+year_built,
+tax_value_dollar_cnt,
+calculated_finished_squarefeet,
+"""
 
 def zillowcolumns():
     columns = zillow_columns.strip().split(sep=",")
