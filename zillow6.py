@@ -3,6 +3,7 @@ import math
 
 dir = "/Users/apple/Documents/zillow/data/"
 dir = "/Users/T162880/Documents/Programs/zillow/"
+dir = "/Programs/kaggle/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
