@@ -1,9 +1,9 @@
 import time
 import math
 
-dir = "/Users/apple/Documents/zillow/data/"
 dir = "/Users/T162880/Documents/Programs/zillow/"
 dir = "/Programs/kaggle/zillow/"
+dir = "/Users/apple/Documents/zillow/data/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -35,7 +35,7 @@ def cat_year(value):
     except:
         return 0
     if year <= 1920: return 1
-    return int((year - 1920)/5) + 2
+    return int((year - 1920)/10) + 2
 
 def cat_dollar(value):
     try:
@@ -68,13 +68,29 @@ def cat_zip(value):
     result = int(zip / 10)
     return result
 
+def cat_lat(value):
+    try:
+        n = int(value)
+    except:
+        return 0
+    return int(n / 200000)
+
+def cat_long(value):
+    try:
+        n = int(value)
+    except:
+        return 0
+    return int(n / 200000)
+
 features = [
           ["yearbuilt", cat_year, ],
-          ["calculatedfinishedsquarefeet", cat_sqft, ],
-          ["taxvaluedollarcnt", cat_dollar, ],
-          ["bathroomcnt", cat_bath, ],
-          ["bedroomcnt", cat_bed, ],
-          ["regionidzip", cat_zip, ],
+          #["calculatedfinishedsquarefeet", cat_sqft, ],
+          #["taxvaluedollarcnt", cat_dollar, ],
+          #["bathroomcnt", cat_bath, ],
+          #["bedroomcnt", cat_bed, ],
+          #["regionidzip", cat_zip, ],
+          ["latitude", cat_lat, ],
+          ["longitude", cat_long, ],
 ]
 
 def bucket():
@@ -116,10 +132,11 @@ def bucket_info(bdict):
         item["train_mean"] = tmean
 
 def selected(bdict):
+    print(len(bdict.items()))
     score_list = [(item["score"], index) for index, item in bdict.items() if "score" in item]
     score_list.sort(reverse=True)
     print(len(score_list))
-    top = 300
+    top = 20
     for item in score_list[:top]: print(item[0], bdict[item[1]]["info"])
     selected = set([ item[1] for item in score_list[:top]])
     ctest = sum([len(bdict[index]["test_list"]) for index in selected])
