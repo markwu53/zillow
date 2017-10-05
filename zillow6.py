@@ -1,5 +1,8 @@
-dir = "/Users/T162880/Documents/Programs/zillow/"
+import time
+import math
+
 dir = "/Users/apple/Documents/zillow/data/"
+dir = "/Users/T162880/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -23,7 +26,7 @@ def cat_sqft(value):
         sqft = int(float(value))
     except:
         return 0
-    return int(sqft / 500)
+    return int(sqft / 200)
 
 def cat_year(value):
     try:
@@ -31,19 +34,46 @@ def cat_year(value):
     except:
         return 0
     if year <= 1920: return 1
-    return int((year - 1920)/20) + 2
+    return int((year - 1920)/5) + 2
 
 def cat_dollar(value):
     try:
         dollar = int(float(value))
     except:
         return 0
-    return int(dollar/200000)
+    return int(dollar/50000)
+
+def cat_bath(value):
+    try:
+        count = int(value)
+    except:
+        return 0
+    if count < 10: return count
+    return 10
+
+def cat_bed(value):
+    try:
+        count = int(value)
+    except:
+        return 0
+    if count < 10: return count
+    return 10
+
+def cat_zip(value):
+    try:
+        zip = int(value)
+    except:
+        return 0
+    result = int(zip / 10)
+    return result
 
 features = [
           ["yearbuilt", cat_year, ],
           ["calculatedfinishedsquarefeet", cat_sqft, ],
           ["taxvaluedollarcnt", cat_dollar, ],
+          ["bathroomcnt", cat_bath, ],
+          ["bedroomcnt", cat_bed, ],
+          ["regionidzip", cat_zip, ],
 ]
 
 def bucket():
@@ -59,40 +89,71 @@ def bucket():
         values = line.split(",")
         parcelid = values[zcolumns["parcelid"]]
         index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
-        if index not in bdict: bdict[index] = ([], [], [])
-        bdict[index][0].append(parcelid)
+        if index not in bdict: bdict[index] = { "test_list": [], "train_list": [], "logerrors": [], }
+        bdict[index]["test_list"].append(parcelid)
         if parcelid not in tdict: continue
-        bdict[index][1].append(parcelid)
-        bdict[index][2].append(tdict[parcelid])
+        bdict[index]["train_list"].append(parcelid)
+        bdict[index]["logerrors"].append(tdict[parcelid])
     return bdict
 
 def score(ctest, ctrain, tratio, tpoint, tdist):
-    dratio = abs(tratio-33) if tratio != 33 else 1
-    return int(ctrain * tdist / dratio)
+    dratio = int(abs(tratio-33)/10) + 1
+    dist = math.pow(tdist, 1.5) if tdist < 1000 else tdist
+    return int(ctrain * dist / dratio)
 
 def bucket_info(bdict):
-    info = []
     for item in bdict.values():
-        ctest = len(item[0])
-        ctrain = len(item[1])
+        ctest = len(item["test_list"])
+        ctrain = len(item["train_list"])
         if ctrain == 0: continue
         tratio = int(ctest/ctrain)
-        tmean = sum(item[2])/ctrain
+        tmean = sum(item["logerrors"])/ctrain
         tpoint = int(tmean*10000)
         tdist = int(abs(tmean-.0115)*10000)
-        info.append((ctest, ctrain, tratio, tpoint, tdist))
-    return info
+        item["info"] = (ctest, ctrain, tratio, tpoint, tdist)
+        item["score"] = score(ctest, ctrain, tratio, tpoint, tdist)
+        item["train_mean"] = tmean
+
+def selected(bdict):
+    score_list = [(item["score"], index) for index, item in bdict.items() if "score" in item]
+    score_list.sort(reverse=True)
+    print(len(score_list))
+    top = 300
+    for item in score_list[:top]: print(item[0], bdict[item[1]]["info"])
+    selected = set([ item[1] for item in score_list[:top]])
+    ctest = sum([len(bdict[index]["test_list"]) for index in selected])
+    ctrain = sum([len(bdict[index]["train_list"]) for index in selected])
+    print(ctest, ctrain)
+    return selected
+
+def mysubmission(bdict, selected_index):
+    with open(dir + my_submission, "w") as fd:
+        fd.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
+        for index, item in bdict.items():
+            logerror = "{:.4f}".format(item["train_mean"]) if index in selected_index else overall_mean
+            for parcelid in item["test_list"]:
+                fd.write("{p},{a},{a},{a},{a},{a},{a}\n".format(p=parcelid, a=logerror))
+
+def logMessage(message):
+    print("[{}] {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), message))
 
 if __name__ == "__main__":
+    logMessage("bucketing")
     bdict = bucket()
-    info = bucket_info(bdict)
+    logMessage("select buckets")
+    bucket_info(bdict)
+    selected_index = selected(bdict)
+    #logMessage("writing submission")
+    #mysubmission(bdict, selected_index)
+    logMessage("done")
     #for item in info: print(item)
     #myinfo.sort(key=lambda item: item[0], reverse=True)
     #for item in myinfo[:30]: print(item, score(*item))
     #print(list(myinfo[0]).append(5))
-    score_info = [ tuple(list(item)+[score(*item)]) for item in myinfo]
-    score_info.sort(key=lambda item: item[5], reverse=True)
-    for item in score_info[:30]: print(item)
+    #score_info = [ tuple(list(item)+[score(*item)]) for item in myinfo]
+    #score_info.sort(key=lambda item: item[5], reverse=True)
+    #for item in score_info[:100]: print(item)
+    #for item in score_info: print(item)
     #print(sum([item[0] for item in myinfo[:40]]))
     #print(sum([item[1] for item in myinfo[:40]]))
     #myinfo = [ item for item in myinfo if item[0] > 1000]
