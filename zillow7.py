@@ -3,7 +3,7 @@ import math
 
 dir = "/Users/T162880/Documents/Programs/zillow/"
 dir = "/Programs/kaggle/zillow/"
-dir = "/Users/apple/Documents/zillow/data/"
+dir = "/Users/apple/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -162,29 +162,57 @@ def mysubmission(bdict, selected_index):
 def logMessage(message):
     print("[{}] {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), message))
 
+def step0():
+    step0_submission = "{}_step_0.csv".format(my_submission.split(sep=".")[0])
+    with open(dir + sample_submission) as fd:
+        parcelids = [ line.split(",")[0] for line in fd.readlines()[1:]]
+    with open(dir + step0_submission, "w") as fd:
+        fd.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
+        for parcelid in parcelids: fd.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e="0.0115"))
+
+def drag(berror, ctest, ctrain, terror):
+    return berror
+
+def step():
+    base_submission = "{}_step_0.csv".format(my_submission.split(sep=".")[0])
+    target_submission = "{}_step_1.csv".format(my_submission.split(sep=".")[0])
+
+    with open(dir + base_submission) as fd:
+        lines = [line.strip().split(",") for line in fd.readlines()[1:]]
+        base = { values[0]: values[1] for values in lines }
+    with open(dir+train_2016) as fd:
+        lines = [line.strip().split(",") for line in fd.readlines()[1:]]
+        tdict = { values[0]: float(values[1]) for values in lines }
+    with open(dir+properties_2016) as fd:
+        tdata = [line.strip().split(",") for line in fd.readlines()[1:]]
+
+    bdict = {}
+    for values in tdata:
+        parcelid = values[zcolumns["parcelid"]]
+        index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
+        if index not in bdict: bdict[index] = (0, 0, 0.0)
+        (ctest, ctrain, tsum) = bdict[index]
+        ctest = ctest + 1
+        if parcelid in tdict:
+            ctrain = ctrain + 1
+            tsum = tsum + tdict[parcelid]
+        bdict[index] = (ctest, ctrain, tsum)
+    for index in bdict:
+        if bdict[index][1] == 0:
+            del bdict[index]
+        else:
+            (ctest, ctrain, tsum) = bdict[index]
+            bdict[index] = (ctest, ctrain, tsum/ctrain)
+
+    with open(dir + target_submission, "w") as fd:
+        fd.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
+        for values in tdata:
+            parcelid = values[zcolumns["parcelid"]]
+            index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
+            berror = base[parcelid]
+            error = drag(berror, *(bdict[index])) if index in bdict else berror
+            e = "{:.4f}".format(error)
+            fd.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e=e))
+
 if __name__ == "__main__":
-    logMessage("bucketing")
-    bdict = bucket()
-    logMessage("select buckets")
-    bucket_info(bdict)
-    selected_index = selected(bdict)
-    #logMessage("writing submission")
-    #mysubmission(bdict, selected_index)
-    logMessage("done")
-    #for item in info: print(item)
-    #myinfo.sort(key=lambda item: item[0], reverse=True)
-    #for item in myinfo[:30]: print(item, score(*item))
-    #print(list(myinfo[0]).append(5))
-    #score_info = [ tuple(list(item)+[score(*item)]) for item in myinfo]
-    #score_info.sort(key=lambda item: item[5], reverse=True)
-    #for item in score_info[:100]: print(item)
-    #for item in score_info: print(item)
-    #print(sum([item[0] for item in myinfo[:40]]))
-    #print(sum([item[1] for item in myinfo[:40]]))
-    #myinfo = [ item for item in myinfo if item[0] > 1000]
-    #plt.hist([ v[0] for v in myinfo], bins=40)
-    #plt.hist([ v[1] for v in myinfo if v[1] < 100], bins=20)
-    #plt.hist([ v[2] for v in myinfo if v[2] < 200], bins=20)
-    #plt.hist([ v[3] for v in myinfo if v[3] > -10000 and v[3] < 10000], bins=20)
-    #plt.hist([ v[4] for v in myinfo if v[4] < 10000], bins=20)
-    #plt.show()
+    step0()
