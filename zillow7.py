@@ -74,7 +74,7 @@ def drag_factor(ctest, ctrain):
             rscore = -0.1 * (ratio - 33) + 1.1
         else:
             rscore = 1/rdist
-    factor = 0.9 + 0.1 * cscore * rscore
+    factor = 0.7 + 0.1 * cscore * rscore
     return factor
 
 def drag(berror, ctest, ctrain, terror):
