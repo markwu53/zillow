@@ -2,8 +2,8 @@ import time
 import math
 
 dir = "/Users/T162880/Documents/Programs/zillow/"
-dir = "/Users/apple/Documents/Programs/zillow/"
 dir = "/Programs/kaggle/zillow/"
+dir = "/Users/apple/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -60,8 +60,25 @@ def step0():
         fd.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
         for parcelid in parcelids: fd.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e="0.0115"))
 
+def drag_factor(ctest, ctrain):
+    if ctrain >= 5000:
+        cscore = 1.0
+    else:
+        cscore = 0.5 + int(ctrain / 1000) / 10
+    ratio = int(ctest/ctrain)
+    if ratio <= 33:
+        rscore = 1.0
+    else:
+        rdist = ratio - 33
+        if rdist <= 10:
+            rscore = -0.1 * (ratio - 33) + 1.1
+        else:
+            rscore = 1/rdist
+    factor = 0.9 + 0.1 * cscore * rscore
+    return factor
+
 def drag(berror, ctest, ctrain, terror):
-    factor = 0.9
+    factor = drag_factor(ctest, ctrain)
     result = berror + factor * (terror - berror)
     return result
 
@@ -70,7 +87,7 @@ def showBucket(bdict):
     keys.sort()
     for key in keys:
         ctest, ctrain, error = bdict[key]
-        print(key, (ctest, ctrain, int(ctest/ctrain), float("{:.4f}".format(error))))
+        print(key, (ctest, ctrain, int(ctest/ctrain), float("{:.4f}".format(drag_factor(ctest, ctrain))), float("{:.4f}".format(error))))
 
 def step():
     base_submission = "{}_step_0.csv".format(my_submission.split(sep=".")[0])
@@ -85,39 +102,45 @@ def step():
         tdict = { values[0]: float(values[1]) for values in lines }
 
     logMessage("building bucket info")
-    with open(dir+properties_2016) as fd:
-        tdata = [line.strip().split(",") for line in fd.readlines()[1:]]
-
     bdict = {}
-    for values in tdata:
-        parcelid = values[zcolumns["parcelid"]]
-        index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
-        if index not in bdict: bdict[index] = (0, 0, 0.0)
-        (ctest, ctrain, tsum) = bdict[index]
-        ctest = ctest + 1
-        if parcelid in tdict:
-            ctrain = ctrain + 1
-            tsum = tsum + tdict[parcelid]
-        bdict[index] = (ctest, ctrain, tsum)
-    for index in bdict:
-        if bdict[index][1] == 0:
-            del bdict[index]
-        else:
+    with open(dir+properties_2016) as fd:
+        header = fd.readline()
+        while True:
+            line = fd.readline()
+            if not line: break
+            values = line.strip().split(",")
+            parcelid = values[zcolumns["parcelid"]]
+            index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
+            if index not in bdict: bdict[index] = (0, 0, 0.0)
             (ctest, ctrain, tsum) = bdict[index]
-            bdict[index] = (ctest, ctrain, tsum/ctrain)
+            ctest = ctest + 1
+            if parcelid in tdict:
+                ctrain = ctrain + 1
+                tsum = tsum + tdict[parcelid]
+            bdict[index] = (ctest, ctrain, tsum)
+        for index in bdict:
+            if bdict[index][1] == 0:
+                del bdict[index]
+            else:
+                (ctest, ctrain, tsum) = bdict[index]
+                bdict[index] = (ctest, ctrain, tsum/ctrain)
 
     showBucket(bdict)
 
     logMessage("writing step result")
-    with open(dir + target_submission, "w") as fd:
-        fd.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
-        for values in tdata:
+    with open(dir + target_submission, "w") as fdw, open(dir+properties_2016) as fd:
+        fdw.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
+        header = fd.readline()
+        while True:
+            line = fd.readline()
+            if not line: break
+            values = line.strip().split(",")
             parcelid = values[zcolumns["parcelid"]]
             index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
             berror = base[parcelid]
             error = drag(berror, *(bdict[index])) if index in bdict else berror
             e = "{:.4f}".format(error)
-            fd.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e=e))
+            fdw.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e=e))
 
 if __name__ == "__main__":
     step()
