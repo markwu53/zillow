@@ -64,6 +64,8 @@ def cat_long(value):
               -118000000,
               -117500000,
               ]
+    points.sort()
+    #points = list(range(-119500000, -117500000, 100000))
     for p in range(len(points)):
         if value < points[p]: return p
     return 0
@@ -80,18 +82,25 @@ def cat_lat(value):
               34160000,
               34500000,
               ]
+    points.sort()
+    #points = list(range(33400000, 34500000, 100000))
     for p in range(len(points)):
         if value < points[p]: return p
     return 0
 
-features = [
+features_1 = [
           ["calculatedfinishedsquarefeet", cat_sqft, ],
           ["yearbuilt", cat_year, ],
-          #["longitude", cat_long, ],
-          #["latitude", cat_lat, ],
 ]
 
-def train_2():
+features_2 = [
+          ["calculatedfinishedsquarefeet", cat_sqft, ],
+          ["yearbuilt", cat_year, ],
+          ["longitude", cat_long, ],
+          ["latitude", cat_lat, ],
+]
+
+"""
     factor = 0.9 #6629480
     factor = 0.8 #6627191
     factor = 0.7 #6625595
@@ -102,6 +111,9 @@ def train_2():
     factor = 0.2 #6630838
     factor = 0.1 #6634646
     factor = 0.0 #6639220
+    """
+ 
+def train_2(factor, oresult):
     bdict = {}
     for values in train_data:
         index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
@@ -114,27 +126,45 @@ def train_2():
         (ctrain, tsum) = bdict[index]
         bdict[index] = (ctrain, tsum/ctrain)
 
-    result = train_1()
-    score(result)
+    nresult = { parcelid: [values[0], values[1]] for parcelid, values in oresult.items() }
     for values in test_data:
         parcelid = values[zcolumns["parcelid"]]
         index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
         if index in bdict:
-            old = result[parcelid][1]
+            old = oresult[parcelid][1]
             new = bdict[index][1]
-            result[parcelid][1] = old + factor * (new - old)
-    score(result)
-    return result
-
-def train():
-    result = train_0()
-    score(result)
-    return result
+            nresult[parcelid][1] = old + factor * (new - old)
+    return nresult
 
 if __name__ == "__main__":
     with open(dir+my_train) as fd:
         train_data = [ line.strip().split(",") for line in fd.readlines()[1:]]
     with open(dir+my_test) as fd:
         test_data = [ line.strip().split(",") for line in fd.readlines()[1:]]
-    train()
+    result = train_1()
+    score(result)
+    features = features_1
+    result = train_2(0.5, result)
+    score(result)
+    features = features_2
+    tresult = train_2(0.9, result)
+    score(tresult)
+    tresult = train_2(0.8, result)
+    score(tresult)
+    tresult = train_2(0.7, result)
+    score(tresult)
+    tresult = train_2(0.6, result)
+    score(tresult)
+    tresult = train_2(0.5, result)
+    score(tresult)
+    tresult = train_2(0.4, result)
+    score(tresult)
+    tresult = train_2(0.3, result)
+    score(tresult)
+    tresult = train_2(0.2, result)
+    score(tresult)
+    tresult = train_2(0.1, result)
+    score(tresult)
+    tresult = train_2(0.0, result)
+    score(tresult)
     print("done")
