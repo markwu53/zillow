@@ -52,11 +52,18 @@ def cat_long(value):
     points = [
               -119500000,
               -119000000,
+              # add step 3 points
+              -118750000,
               -118500000,
+              # add step 3 points
+              -118250000,
               -118000000,
+              # add step 3 points
+              -117750000,
               -117500000,
               ]
-    for p in range(len(points)):
+    points.sort()
+    for p in points:
         if value < points[p]: return p
     return 0
 
@@ -71,8 +78,10 @@ def cat_lat(value):
               33900000,
               34160000,
               34500000,
+              # add step 3 points
               ]
-    for p in range(len(points)):
+    points.sort()
+    for p in points:
         if value < points[p]: return p
     return 0
 
@@ -114,10 +123,6 @@ def drag_factor(ctest, ctrain):
 def drag_factor(ctest, ctrain):
     #result = 0.9 if ctrain > 100 else 0.5
     result = 0.1
-    result = 0.15
-    result = 0.2
-    result = 0.22
-    result = 0.18
     return result
 
 def drag(berror, ctest, ctrain, terror):
@@ -133,8 +138,8 @@ def showBucket(bdict):
         print(key, (ctest, ctrain, int(ctest/ctrain), float("{:.4f}".format(drag_factor(ctest, ctrain))), float("{:.4f}".format(error))))
 
 def step():
-    base_submission = "{}_step_1.csv".format(my_submission.split(sep=".")[0])
-    target_submission = "{}_step_2.csv".format(my_submission.split(sep=".")[0])
+    base_submission = "{}_step_2.csv".format(my_submission.split(sep=".")[0])
+    target_submission = "{}_step_3.csv".format(my_submission.split(sep=".")[0])
 
     logMessage("begin")
     with open(dir + base_submission) as fd:
