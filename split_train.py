@@ -21,6 +21,15 @@ parcelid,logerror,airconditioningtypeid,architecturalstyletypeid,basementsqft,ba
 train_count = 90275
 test_count = 10000
 
+def test_split():
+    with open(dir+train_2016) as fd:
+        train_data = [ line.strip().split(",") for line in fd.readlines()[1:]]
+    for _ in range(20):
+        rset = set()
+        while len(rset) < test_count: rset.add(random.randrange(train_count))
+        mean = sum([float(train_data[i][1]) for i in rset]) / 10000
+        print("{:.4f}".format(mean))
+
 def split_data():
     rset = set()
     while len(rset) < test_count:
@@ -46,5 +55,6 @@ def split_data():
                 fdw2.write("{}\n".format(",".join([parcelid]+[dict_test[parcelid]]+values[1:])))
 
 if __name__ == "__main__":
-    split_data()
+    #split_data()
+    test_split()
     print("done")
