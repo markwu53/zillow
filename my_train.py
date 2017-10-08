@@ -10,23 +10,25 @@ parcelid,logerror,airconditioningtypeid,architecturalstyletypeid,basementsqft,ba
 columns = my_zillow_columns.strip().split(sep=",")
 zcolumns = { value: index for (index, value) in enumerate(columns) }
 
+def score(result):
+    total_error = sum([abs(errors[0]-errors[1]) for errors in result.values()])
+    score = int(float("{:.4f}".format(total_error)) * 10000)
+    print(score)
+
+def train_0():
+    #6618160
+    result = { values[0]: [float(values[1]), 0.0] for values in test_data }
+    return result
+
 def train_1():
     """
     set train data mean error as test error
     L1 score: 6639220
     """
-    with open(dir+my_train) as fd:
-        lines = [ line.strip().split(",") for line in fd.readlines()[1:]]
-        errors = [ float(values[zcolumns["logerror"]]) for values in lines ]
-        mean_error = sum(errors) / len(errors)
-    print(mean_error)
-    with open(dir+my_test) as fd:
-        lines = [ line.strip().split(",") for line in fd.readlines()[1:]]
-        errors = [ float(values[zcolumns["logerror"]]) for values in lines ]
-        total_error = sum([abs(error-mean_error) for error in errors])
-    print(total_error)
-    score = int(float("{:.4f}".format(total_error)) * 10000)
-    print(score)
+    train_errors = [ float(values[zcolumns["logerror"]]) for values in train_data ]
+    mean_error = sum(train_errors) / len(train_errors)
+    result = { values[0]: [float(values[1]), mean_error] for values in test_data }
+    return result
 
 def cat_sqft(value):
     try:
@@ -89,6 +91,50 @@ features = [
           #["latitude", cat_lat, ],
 ]
 
+def train_2():
+    factor = 0.9 #6629480
+    factor = 0.8 #6627191
+    factor = 0.7 #6625595
+    factor = 0.6 #6624706
+    factor = 0.5 #6624632
+    factor = 0.4 #6625623
+    factor = 0.3 #6627802
+    factor = 0.2 #6630838
+    factor = 0.1 #6634646
+    factor = 0.0 #6639220
+    bdict = {}
+    for values in train_data:
+        index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
+        if index not in bdict: bdict[index] = (0, 0.0)
+        (ctrain, tsum) = bdict[index]
+        ctrain += 1
+        tsum += float(values[zcolumns["logerror"]])
+        bdict[index] = (ctrain, tsum)
+    for index in bdict:
+        (ctrain, tsum) = bdict[index]
+        bdict[index] = (ctrain, tsum/ctrain)
+
+    result = train_1()
+    score(result)
+    for values in test_data:
+        parcelid = values[zcolumns["parcelid"]]
+        index = tuple([feature[1](values[zcolumns[feature[0]]]) for feature in features])
+        if index in bdict:
+            old = result[parcelid][1]
+            new = bdict[index][1]
+            result[parcelid][1] = old + factor * (new - old)
+    score(result)
+    return result
+
+def train():
+    result = train_0()
+    score(result)
+    return result
+
 if __name__ == "__main__":
+    with open(dir+my_train) as fd:
+        train_data = [ line.strip().split(",") for line in fd.readlines()[1:]]
+    with open(dir+my_test) as fd:
+        test_data = [ line.strip().split(",") for line in fd.readlines()[1:]]
     train()
     print("done")
