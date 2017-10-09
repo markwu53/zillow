@@ -118,6 +118,7 @@ def drag_factor(ctest, ctrain):
     result = 0.2
     result = 0.22
     result = 0.18
+    result = 0.19
     return result
 
 def drag(berror, ctest, ctrain, terror):

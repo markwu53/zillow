@@ -63,7 +63,7 @@ def cat_long(value):
               -117500000,
               ]
     points.sort()
-    for p in points:
+    for p in range(len(points)):
         if value < points[p]: return p
     return 0
 
@@ -81,7 +81,7 @@ def cat_lat(value):
               # add step 3 points
               ]
     points.sort()
-    for p in points:
+    for p in range(len(points)):
         if value < points[p]: return p
     return 0
 
@@ -123,6 +123,8 @@ def drag_factor(ctest, ctrain):
 def drag_factor(ctest, ctrain):
     #result = 0.9 if ctrain > 100 else 0.5
     result = 0.1
+    result = 0.03
+    result = 0.05
     return result
 
 def drag(berror, ctest, ctrain, terror):
