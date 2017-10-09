@@ -1,16 +1,14 @@
 import random
 
-path = "/Users/T162880/Documents/Programs/zillow/"
 path = "/Programs/kaggle/zillow/"
 path = "/Users/apple/Documents/Programs/zillow/"
+path = "/Users/T162880/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
 train_2017 = "train_2017.csv"
 sample_submission = "sample_submission.csv"
 my_submission = "my_submission.csv"
-my_train = "my_train.csv"
-my_test = "my_test.csv"
 zillow_columns = """
 parcelid,airconditioningtypeid,architecturalstyletypeid,basementsqft,bathroomcnt,bedroomcnt,buildingclasstypeid,buildingqualitytypeid,calculatedbathnbr,decktypeid,finishedfloor1squarefeet,calculatedfinishedsquarefeet,finishedsquarefeet12,finishedsquarefeet13,finishedsquarefeet15,finishedsquarefeet50,finishedsquarefeet6,fips,fireplacecnt,fullbathcnt,garagecarcnt,garagetotalsqft,hashottuborspa,heatingorsystemtypeid,latitude,longitude,lotsizesquarefeet,poolcnt,poolsizesum,pooltypeid10,pooltypeid2,pooltypeid7,propertycountylandusecode,propertylandusetypeid,propertyzoningdesc,rawcensustractandblock,regionidcity,regionidcounty,regionidneighborhood,regionidzip,roomcnt,storytypeid,threequarterbathnbr,typeconstructiontypeid,unitcnt,yardbuildingsqft17,yardbuildingsqft26,yearbuilt,numberofstories,fireplaceflag,structuretaxvaluedollarcnt,taxvaluedollarcnt,assessmentyear,landtaxvaluedollarcnt,taxamount,taxdelinquencyflag,taxdelinquencyyear,censustractandblock
 """
@@ -49,6 +47,8 @@ def random_test_set():
     while len(rset) < test_count:
         rset.add(random.randrange(len(train_list)))
     return { train_list[i] for i in rset }
+
+test_set = random_test_set()
 
 #level 0
 train_mean = sum(train_error.values()) / len(train_error)
@@ -181,11 +181,51 @@ def indexing(values):
     return index
 
 index_dict = {}
-for parcelid in train_data:
+for parcelid in train_set:
     index = indexing(train_data[parcelid])
     if index not in index_dict:
         index_dict[index] = set()
     index_dict[index].add(parcelid)
 
-def train_level_1():
-    pass
+#[ (item, str(eval("type({})".format(item)))) for item in dir() if not item.startswith("_") ]
+[ (item, eval("type({})".format(item))) for item in dir() if not item.startswith("_") ]
+
+level_dicts = []
+for n in range(4):
+    level_dict = {}
+    for index in index_dict:
+        level_index = tuple(index[:n+1])
+        if level_index not in level_dict:
+            level_dict[level_index] = (0, 0.0)
+        count, sum = level_dict[level_index]
+        for parcelid in index_dict[index]:
+            count += 1
+            sum += train_error[parcelid]
+            level_dict[level_index] = (count, sum)
+    level_dicts.append(level_dict)
+
+test_index_dict = {}
+for parcelid in test_set:
+    index = indexing(train_data[parcelid])
+    if index not in test_index_dict:
+        test_index_dict[index] = set()
+    test_index_dict[index].add(parcelid)
+
+def train_level_1(bucket):
+    index = ((bucket,),)
+    a, b = level_dicts[0][index]
+    target = b/a
+    base = train_mean
+    for i in range(100):
+        factor = 0.1 * i - 3.0
+        set_value = base + factor * (target - base)
+        error_sum = 0.0
+        test_count = 0
+        value_sum = 0.0
+        for key in test_index_dict.keys():
+            if tuple([key[0]]) == index:
+                test_count += len(test_index_dict[key])
+                error_sum += sum([pow(abs(set_value - train_error[parcelid]), 2) for parcelid in test_index_dict[key]])
+                value_sum += sum([train_error[parcelid] for parcelid in test_index_dict[key]])
+        print("{:.2f}: {:f}, {}, {}, {}, {}, {}".format(factor, error_sum, a, test_count, base, target, value_sum/test_count))
+
