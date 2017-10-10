@@ -1,8 +1,6 @@
 import random
+from osenv import path
 
-path = "/Programs/kaggle/zillow/"
-path = "/Users/apple/Documents/Programs/zillow/"
-path = "/Users/T162880/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
