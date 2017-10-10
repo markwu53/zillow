@@ -20,51 +20,35 @@ parcelid,logerror,airconditioningtypeid,architecturalstyletypeid,basementsqft,ba
 columns = my_zillow_columns.strip().split(sep=",")
 zcolumns = { value: index for (index, value) in enumerate(columns) }
 
-test_count = 10000
+def load_train():
+    #join train error with properties
+    with open(path+train_2016) as fd:
+        lines = [ line.strip().split(",") for line in fd.readlines()[1:]]
+    train_error = { values[0]: float(values[1]) for values in lines }
+    train_set = train_error.keys()
+    train_list = list(train_set)
+    train_data = {}
+    with open(path+properties_2016) as fd:
+        header = fd.readline()
+        while True:
+            line = fd.readline()
+            if not line: break
+            values = line.split(",")
+            parcelid = values[0]
+            if parcelid not in train_error: continue
+            train_data[parcelid] = [ parcelid, train_error[parcelid]] + values[1:]
+    return train_error, train_set, train_list, train_data
 
-#join train error with properties
-with open(path+train_2016) as fd:
-    lines = [ line.strip().split(",") for line in fd.readlines()[1:]]
-train_error = { values[0]: float(values[1]) for values in lines }
-train_set = train_error.keys()
-train_list = list(train_set)
-train_data = {}
-with open(path+properties_2016) as fd:
-    header = fd.readline()
-    while True:
-        line = fd.readline()
-        if not line: break
-        values = line.split(",")
-        parcelid = values[0]
-        if parcelid not in train_error: continue
-        train_data[parcelid] = [ parcelid, train_error[parcelid]] + values[1:]
+train_error, train_set, train_list, train_data = load_train()
 
-#split train test
-def random_test_set():
+def train_split(base_count):
+    #split train test
     rset = set()
-    while len(rset) < test_count:
+    while len(rset) < base_count:
         rset.add(random.randrange(len(train_list)))
-    return { train_list[i] for i in rset }
-
-test_set = random_test_set()
-
-#level 0
-train_mean = sum(train_error.values()) / len(train_error)
-
-def assign_test_error(test_set):
-    test_error = { parcelid: train_mean for parcelid in test_set }
-    return test_error
-
-#level 0 assigns train_mean to test set
-#take 100 times score mean
-def score_it():
-    total_error = 0.0
-    for i in range(100):
-        test_set = random_test_set()
-        test_error = assign_test_error(test_set)
-        total_error += sum([abs(test_error[parcelid] - train_error[parcelid]) for parcelid in split_test])
-    score = int((total_error / 100) * 10000)
-    print(score)
+    base_set = { train_list[i] for i in rset }
+    test_set = train_set - base_set
+    return base_set, test_set
 
 def cat_sqft(value):
     try:
@@ -166,64 +150,61 @@ def cat_lat2(value):
         if value < points[p]: return p
     return 0
 
+def indexing_data(data):
+    index_dict = {}
+    for parcelid in data:
+        index = []
+        for level in levels:
+            coords = []
+            for coord in level:
+                cat_coord = coord[1](train_data[parcelid][zcolumns[coord[0]]])
+                coords.append(cat_coord)
+            index.append(tuple(coords))
+        index = tuple(index)
+        if index not in index_dict:
+            index_dict[index] = set()
+        index_dict[index].add(parcelid)
+    return index_dict
+
+def get_level_info(index_dict):
+    level_dicts = []
+    for n in range(len(levels)):
+        level_dict = {}
+        for index in index_dict:
+            level_index = tuple(index[:n+1])
+            if level_index not in level_dict:
+                level_dict[level_index] = (0, 0.0)
+            count, total = level_dict[level_index]
+            for parcelid in index_dict[index]:
+                count += 1
+                total += train_error[parcelid]
+                level_dict[level_index] = (count, total)
+        level_dict = { key: (count, total/count) for key, (count, total) in level_dict.items() }
+        level_dicts.append(level_dict)
+    return level_dicts
+
 levels = [
           #[["calculatedfinishedsquarefeet", cat_sqft, ], ["yearbuilt", cat_year, ],],
-          [["yearbuilt", cat_year, ],],
-          [["calculatedfinishedsquarefeet", cat_sqft, ]],
           [["longitude", cat_long, ], ["latitude", cat_lat, ],],
+          [["calculatedfinishedsquarefeet", cat_sqft, ]],
+          [["yearbuilt", cat_year, ],],
           [["longitude", cat_long2, ], ["latitude", cat_lat2, ],],
 ]
 
-def indexing(values):
-    index = tuple([tuple([coord[1](values[zcolumns[coord[0]]]) for coord in level]) for level in levels])
-    return index
+base_count = 45000
 
-index_dict = {}
-for parcelid in train_set:
-    index = indexing(train_data[parcelid])
-    if index not in index_dict:
-        index_dict[index] = set()
-    index_dict[index].add(parcelid)
-
-#[ (item, str(eval("type({})".format(item)))) for item in dir() if not item.startswith("_") ]
-[ (item, eval("type({})".format(item))) for item in dir() if not item.startswith("_") ]
-
-level_dicts = []
-for n in range(4):
-    level_dict = {}
-    for index in index_dict:
-        level_index = tuple(index[:n+1])
-        if level_index not in level_dict:
-            level_dict[level_index] = (0, 0.0)
-        count, sum = level_dict[level_index]
-        for parcelid in index_dict[index]:
-            count += 1
-            sum += train_error[parcelid]
-            level_dict[level_index] = (count, sum)
-    level_dicts.append(level_dict)
-
-test_index_dict = {}
-for parcelid in test_set:
-    index = indexing(train_data[parcelid])
-    if index not in test_index_dict:
-        test_index_dict[index] = set()
-    test_index_dict[index].add(parcelid)
-
-def train_level_1(bucket):
-    index = ((bucket,),)
-    a, b = level_dicts[0][index]
-    target = b/a
-    base = train_mean
-    for i in range(100):
-        factor = 0.1 * i - 3.0
-        set_value = base + factor * (target - base)
-        error_sum = 0.0
-        test_count = 0
-        value_sum = 0.0
-        for key in test_index_dict.keys():
-            if tuple([key[0]]) == index:
-                test_count += len(test_index_dict[key])
-                error_sum += sum([pow(abs(set_value - train_error[parcelid]), 2) for parcelid in test_index_dict[key]])
-                value_sum += sum([train_error[parcelid] for parcelid in test_index_dict[key]])
-        print("{:.2f}: {:f}, {}, {}, {}, {}, {}".format(factor, error_sum, a, test_count, base, target, value_sum/test_count))
+def doit():
+    base_set, test_set = train_split(base_count)
+    base_mean = sum([ train_error[parcelid] for parcelid in base_set ]) / len(base_set)
+    index_base_set = indexing_data(base_set)
+    index_test_set = indexing_data(test_set)
+    base_set_level_info = get_level_info(index_base_set)
+    test_set_level_info = get_level_info(index_test_set)
+    index0 = list(base_set_level_info[0].keys())
+    index0.sort()
+    for index in index0:
+        if index not in test_set_level_info[0]: continue
+        bcount, bmean = base_set_level_info[0][index]
+        tcount, tmean = test_set_level_info[0][index]
+        print("{}: ({}, {}, {:.4f}, {:.4f}, {:.4f})".format(index, bcount, tcount, base_mean, bmean, tmean))
 
