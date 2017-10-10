@@ -1,4 +1,3 @@
-import random
 from osenv import path
 from zipfile import ZIP_DEFLATED
 
@@ -35,15 +34,6 @@ def load_train():
             if parcelid not in train_error: continue
             train_data[parcelid] = [ parcelid, train_error[parcelid]] + values[1:]
     return train_error, train_set, train_list, train_data
-
-def train_split(base_count):
-    #split train test
-    rset = set()
-    while len(rset) < base_count:
-        rset.add(random.randrange(len(train_list)))
-    base_set = { train_list[i] for i in rset }
-    test_set = train_set - base_set
-    return base_set, test_set
 
 def cat_sqft(value):
     try:
@@ -148,43 +138,6 @@ def cat_lat2(value):
         if value < points[p]: return p
     return 0
 
-def index_item(values):
-    index = []
-    for level in levels:
-        coords = []
-        for coord in level:
-            cat_coord = coord[1](values[zcolumns[coord[0]]])
-            coords.append(cat_coord)
-        index.append(tuple(coords))
-    index = tuple(index)
-    return index
-
-def indexing_data(data):
-    index_dict = {}
-    for parcelid in data:
-        index = index_item(train_data[parcelid])
-        if index not in index_dict:
-            index_dict[index] = set()
-        index_dict[index].add(parcelid)
-    return index_dict
-
-def get_level_info(index_dict):
-    level_dicts = []
-    for n in range(len(levels)):
-        level_dict = {}
-        for index in index_dict:
-            level_index = tuple(index[:n+1])
-            if level_index not in level_dict:
-                level_dict[level_index] = (0, 0.0)
-            count, total = level_dict[level_index]
-            for parcelid in index_dict[index]:
-                count += 1
-                total += train_error[parcelid]
-                level_dict[level_index] = (count, total)
-        level_dict = { key: (count, total/count) for key, (count, total) in level_dict.items() }
-        level_dicts.append(level_dict)
-    return level_dicts
-
 def zipit():
     import zipfile
     with zipfile.ZipFile(path+my_submission+".zip", "w", compression=zipfile.ZIP_DEFLATED) as fd:
@@ -230,44 +183,43 @@ def submission():
             e = "{:.4f}".format(logerror)
             fdw.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e=e))
 
-base_set, test_set = train_split(base_count)
-base_mean = sum([ train_error[parcelid] for parcelid in base_set ]) / len(base_set)
-index_base_set = indexing_data(base_set)
-index_test_set = indexing_data(test_set)
-base_set_level_info = get_level_info(index_base_set)
-test_set_level_info = get_level_info(index_test_set)
-
-def doit():
-    base_set, test_set = train_split(base_count)
-    base_mean = sum([ train_error[parcelid] for parcelid in base_set ]) / len(base_set)
-    index_base_set = indexing_data(base_set)
-    index_test_set = indexing_data(test_set)
-    base_set_level_info = get_level_info(index_base_set)
-    test_set_level_info = get_level_info(index_test_set)
-    index0 = list(base_set_level_info[0].keys())
-    index0.sort()
-    result = []
-    for index in index0:
-        if index not in test_set_level_info[0]: continue
-        bcount, bmean = base_set_level_info[0][index]
-        tcount, tmean = test_set_level_info[0][index]
-        ratio1 = bmean/base_mean
-        ratio2 = tmean/base_mean
-        ratio = (ratio1 + ratio2) / 2
-        result.append((index, bcount, tcount, base_mean, bmean, tmean, ratio1, ratio2, ratio))
-    result.sort(key=lambda item: item[1], reverse=True)
-    for values in result:
-        print("{}: ({}, {}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f})".format(*values))
-
 train_error, train_set, train_list, train_data = load_train()
 
-levels = [
-          [["yearbuilt", cat_year, ],],
-          #[["calculatedfinishedsquarefeet", cat_sqft, ]],
-          #[["calculatedfinishedsquarefeet", cat_sqft, ], ["yearbuilt", cat_year, ],],
-          #[["longitude", cat_long, ], ["latitude", cat_lat, ],],
-          #[["longitude", cat_long2, ], ["latitude", cat_lat2, ],],
-]
+def split_year(values):
+    try:
+        value = int(values[zcolumns["yearbuilt"]].split(".")[0])
+    except:
+        return 0
+    if value < 1950: return 1
+    if value < 1970: return 2
+    if value < 1990: return 3
+    if value < 2000: return 4
+    return 5
 
-base_count = 90000
-doit()
+class Node(object):
+    def __init__(self):
+        self.sfun = None
+        self.children = None
+        self.content = None
+
+root = Node()
+root.sfun = split_year
+root.children = {}
+
+for parcelid in train_set:
+    cat = root.sfun(train_data[parcelid])
+    if (cat,) not in root.children:
+        node = Node()
+        node.content = set()
+        root.children[(cat,)] = node
+    root.children[(cat,)].content.add(parcelid)
+
+for index, node in root.children.items():
+    print(index, len(node.content))
+
+def find_node(index):
+    node = root
+    for item in index:
+        node = node.children[(item,)]
+    return node
+
