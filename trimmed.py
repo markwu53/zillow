@@ -110,6 +110,23 @@ def cat_sqft_2(parcelid):
         if sqft < end: return "c{:02d}: {}-{}".format(i+1, begin, end)
     return "big: >4500"
 
+def cat_sqft_3(parcelid):
+    try:
+        sqft = int(float(train_data[parcelid][zcolumns["calculatedfinishedsquarefeet"]]))
+    except:
+        return "0: no sqft"
+    if sqft < 600: return "1: small <600"
+    if sqft < 2000: return "2: 600-2000"
+    if sqft < 2700: return "3: 2000-2700"
+    if sqft < 3100: return "4: 2700-3100"
+    if sqft < 3900: return "5: 3100-3900"
+    return "6: big: >3900"
+
+def cat_year_sqft_1(parcelid):
+    cat_year = cat_year_3(parcelid)
+    cat_sqft = cat_sqft_3(parcelid)
+    return (cat_year, cat_sqft)
+
 def bucketing(cat_func):
     buckets = {}
     for parcelid in train_set:
@@ -130,5 +147,54 @@ def bucketing(cat_func):
         info = (item[0], len(error2), f7(mean2), f7(std2))
         print(info)
 
-bucketing(cat_sqft_2)
+def graphit(cat_func):
+    buckets = {}
+    for parcelid in train_set:
+        index = cat_func(parcelid)
+        if index not in buckets:
+            buckets[index] = set()
+        buckets[index].add(parcelid)
+    gf = {}
+    for index in buckets:
+        error2 = [ train_error[parcelid] for parcelid in buckets[index] if parcelid in trimmed_set ]
+        mean2 = np.mean(error2)
+        std2 = np.std(error2)
+        count2 = len(error2)
+        index1, index2 = index
+        index1 = int(index1.split(":")[0])
+        index2 = int(index2.split(":")[0])
+        gf[(index1, index2)] = (mean2, count2)
+    return gf
 
+def zf(x, y):
+    return [ [gf[point][0] for point in zip(*item)] for item in zip(x, y) ]
+
+def zfc(x, y):
+    return [ [gf[point][1] for point in zip(*item)] for item in zip(x, y) ]
+
+x = np.arange(1, 7)
+y = np.arange(1, 7)
+X, Y = np.meshgrid(x, y)
+Z = zf(X, Y)
+ZC = zfc(X, Y)
+
+bucketing(cat_year_sqft_1)
+gf = graphit(cat_year_sqft_1)
+
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+surf = ax.plot_surface(X, Y, Z)
+surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
+surfc = ax.plot_surface(X, Y, ZC, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
+
+ax.zaxis.set_major_locator(LinearLocator(10))
+ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+fig.colorbar(surf, shrink=0.5, aspect=5)
+
+plt.show()
