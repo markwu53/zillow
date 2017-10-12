@@ -42,6 +42,26 @@ trimmed_set_mean = np.mean([ train_error[parcelid] for parcelid in trimmed_set ]
 def step_0(parcelid):
     return trimmed_set_mean
 
+def submit():
+    with open(path+properties_2016) as fd, open(path+my_submission, "w") as fdw:
+        fd.readline()
+        fdw.write("ParcelId,201610,201611,201612,201710,201711,201712\n")
+        while True:
+            line = fd.readline()
+            if not line: break
+            values = line.strip().split(",")
+            values = [ values[0], "" ] + values[1:]
+            parcelid = values[zcolumns["parcelid"]]
+            index = index_item(values)
+            index1 = (index[0], )
+            ratio = 1.0
+            if index1 in topn:
+                ratio = topn[index1]
+            logerror = 0.0115 * ratio
+            e = "{:.4f}".format(logerror)
+            fdw.write("{p},{e},{e},{e},{e},{e},{e}\n".format(p=parcelid, e=e))
+    pass
+
 delta_1 = { parcelid: train_error[parcelid] - step_0(parcelid) for parcelid in trimmed_set }
 delta_2 = { parcelid: train_error[parcelid] - step_1(parcelid) for parcelid in trimmed_set }
 
