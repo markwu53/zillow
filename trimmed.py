@@ -37,6 +37,52 @@ def load_train():
 
 train_error, train_set, train_list, train_data = load_train()
 trimmed_set = set([ parcelid for parcelid in train_set if abs(train_error[parcelid]-.1) < .5 ])
+trimmed_set_mean = np.mean([ train_error[parcelid] for parcelid in trimmed_set ])
+
+def step_0(parcelid):
+    return trimmed_set_mean
+
+delta_1 = { parcelid: train_error[parcelid] - step_0(parcelid) for parcelid in trimmed_set }
+delta_2 = { parcelid: train_error[parcelid] - step_1(parcelid) for parcelid in trimmed_set }
+
+def explore(cat_func, delta):
+    buckets = {}
+    for parcelid in trimmed_set:
+        index = cat_func(parcelid)
+        if index not in buckets:
+            buckets[index] = set()
+        buckets[index].add(parcelid)
+    result = [(key, value) for (key, value) in buckets.items()]
+    result.sort(key=lambda item: item[0])
+    for item in result:
+        error = [ delta[parcelid] for parcelid in item[1]]
+        mean = np.mean(error)
+        std = np.std(error)
+        info = (item[0], int(mean*10000), len(error), f7(mean), f7(std))
+        print(info)
+
+explore(cat_year_2, delta_1)
+
+def step_1_bucketing():
+    buckets = {}
+    for parcelid in trimmed_set:
+        index = cat_year_2(parcelid)
+        if index not in buckets:
+            buckets[index] = set()
+        buckets[index].add(parcelid)
+    buckets_mean = {}
+    for index, bucket in buckets.items():
+        delta = [ delta_1[parcelid] for parcelid in bucket ]
+        mean = np.mean(delta)
+        buckets_mean[index] = mean
+    return buckets, buckets_mean
+
+step_1_buckets, step_1_buckets_mean = step_1_bucketing()
+
+def step_1(parcelid):
+    index = cat_year_2(parcelid)
+    value = step_0(parcelid) + step_1_buckets_mean[index]
+    return value
 
 def cut(bound):
     errors = [ train_error[parcelid] for parcelid in train_set if abs(train_error[parcelid]-.1) < bound ]
@@ -58,10 +104,10 @@ def cat_year_1(parcelid):
         year = int(train_data[parcelid][zcolumns["yearbuilt"]].split(".")[0])
     except:
         return "noyear"
-    if year < 1950: return "before 1950"
-    for i in range(40):
-        if year < 1950 + (i+1) * 2:
-            return "{}-{}".format(1950+i*2, 1950+(i+1)*2)
+    if year < 1900: return "before 1900"
+    for i in range(65):
+        if year < 1900 + (i+1) * 5:
+            return "{}-{}".format(1900+i*5, 1900+(i+1)*5)
     return "noyear"
 
 def cat_year_2(parcelid):
@@ -69,11 +115,16 @@ def cat_year_2(parcelid):
         year = int(train_data[parcelid][zcolumns["yearbuilt"]].split(".")[0])
     except:
         return "0: noyear"
-    if year < 1950: return "1: before 1950"
-    if year < 1970: return "2: 50 and 60"
-    if year < 1990: return "3: 70 and 80"
-    if year >= 1990: return "4: after 1990"
-    return "0: noyear"
+    if year < 1920: return "1: <1920"
+    if year < 1930: return "2: 1920-1930"
+    if year < 1935: return "3: 1930-1935"
+    if year < 1960: return "4: 1935-1960"
+    if year < 1965: return "5: 1960-1965"
+    if year < 1980: return "6: 1965-1980"
+    if year < 1985: return "7: 1980-1985"
+    if year < 1990: return "8: 1985-1990"
+    if year < 2010: return "9: 1990-2010"
+    return "10: >2010"
 
 def cat_year_3(parcelid):
     try:
@@ -172,29 +223,31 @@ def zf(x, y):
 def zfc(x, y):
     return [ [gf[point][1] for point in zip(*item)] for item in zip(x, y) ]
 
-x = np.arange(1, 7)
-y = np.arange(1, 7)
-X, Y = np.meshgrid(x, y)
-Z = zf(X, Y)
-ZC = zfc(X, Y)
+def temp2():
+    x = np.arange(1, 7)
+    y = np.arange(1, 7)
+    X, Y = np.meshgrid(x, y)
+    Z = zf(X, Y)
+    ZC = zfc(X, Y)
 
-bucketing(cat_year_sqft_1)
-gf = graphit(cat_year_sqft_1)
+    bucketing(cat_year_sqft_1)
+    gf = graphit(cat_year_sqft_1)
 
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+    import matplotlib.pyplot as plt
 
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-surf = ax.plot_surface(X, Y, Z)
-surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
-surfc = ax.plot_surface(X, Y, ZC, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(X, Y, Z)
+    surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
+    surfc = ax.plot_surface(X, Y, ZC, rstride=1, cstride=1, cmap=cm.RdBu,linewidth=0, antialiased=False)
 
-ax.zaxis.set_major_locator(LinearLocator(10))
-ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
-fig.colorbar(surf, shrink=0.5, aspect=5)
+    fig.colorbar(surf, shrink=0.5, aspect=5)
 
-plt.show()
+    plt.show()
+

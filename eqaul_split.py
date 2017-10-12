@@ -8,7 +8,64 @@ train_2017 = "train_2017.csv"
 sample_submission = "sample_submission.csv"
 my_submission = "my_submission.csv"
 zillow_columns = """
-parcelid,airconditioningtypeid,architecturalstyletypeid,basementsqft,bathroomcnt,bedroomcnt,buildingclasstypeid,buildingqualitytypeid,calculatedbathnbr,decktypeid,finishedfloor1squarefeet,calculatedfinishedsquarefeet,finishedsquarefeet12,finishedsquarefeet13,finishedsquarefeet15,finishedsquarefeet50,finishedsquarefeet6,fips,fireplacecnt,fullbathcnt,garagecarcnt,garagetotalsqft,hashottuborspa,heatingorsystemtypeid,latitude,longitude,lotsizesquarefeet,poolcnt,poolsizesum,pooltypeid10,pooltypeid2,pooltypeid7,propertycountylandusecode,propertylandusetypeid,propertyzoningdesc,rawcensustractandblock,regionidcity,regionidcounty,regionidneighborhood,regionidzip,roomcnt,storytypeid,threequarterbathnbr,typeconstructiontypeid,unitcnt,yardbuildingsqft17,yardbuildingsqft26,yearbuilt,numberofstories,fireplaceflag,structuretaxvaluedollarcnt,taxvaluedollarcnt,assessmentyear,landtaxvaluedollarcnt,taxamount,taxdelinquencyflag,taxdelinquencyyear,censustractandblock
+parcelid
+airconditioningtypeid
+architecturalstyletypeid
+basementsqft
+bathroomcnt
+bedroomcnt
+buildingclasstypeid
+buildingqualitytypeid
+calculatedbathnbr
+decktypeid
+finishedfloor1squarefeet
+calculatedfinishedsquarefeet
+finishedsquarefeet12
+finishedsquarefeet13
+finishedsquarefeet15
+finishedsquarefeet50
+finishedsquarefeet6
+fips
+fireplacecnt
+fullbathcnt
+garagecarcnt
+garagetotalsqft
+hashottuborspa
+heatingorsystemtypeid
+latitude
+longitude
+lotsizesquarefeet
+poolcnt
+poolsizesum
+pooltypeid10
+pooltypeid2
+pooltypeid7
+propertycountylandusecode
+propertylandusetypeid
+propertyzoningdesc
+rawcensustractandblock
+regionidcity
+regionidcounty
+regionidneighborhood
+regionidzip
+roomcnt
+storytypeid
+threequarterbathnbr
+typeconstructiontypeid
+unitcnt
+yardbuildingsqft17
+yardbuildingsqft26
+yearbuilt
+numberofstories
+fireplaceflag
+structuretaxvaluedollarcnt
+taxvaluedollarcnt
+assessmentyear
+landtaxvaluedollarcnt
+taxamount
+taxdelinquencyflag
+taxdelinquencyyear
+censustractandblock
 """
 my_zillow_columns = """
 parcelid,logerror,airconditioningtypeid,architecturalstyletypeid,basementsqft,bathroomcnt,bedroomcnt,buildingclasstypeid,buildingqualitytypeid,calculatedbathnbr,decktypeid,finishedfloor1squarefeet,calculatedfinishedsquarefeet,finishedsquarefeet12,finishedsquarefeet13,finishedsquarefeet15,finishedsquarefeet50,finishedsquarefeet6,fips,fireplacecnt,fullbathcnt,garagecarcnt,garagetotalsqft,hashottuborspa,heatingorsystemtypeid,latitude,longitude,lotsizesquarefeet,poolcnt,poolsizesum,pooltypeid10,pooltypeid2,pooltypeid7,propertycountylandusecode,propertylandusetypeid,propertyzoningdesc,rawcensustractandblock,regionidcity,regionidcounty,regionidneighborhood,regionidzip,roomcnt,storytypeid,threequarterbathnbr,typeconstructiontypeid,unitcnt,yardbuildingsqft17,yardbuildingsqft26,yearbuilt,numberofstories,fireplaceflag,structuretaxvaluedollarcnt,taxvaluedollarcnt,assessmentyear,landtaxvaluedollarcnt,taxamount,taxdelinquencyflag,taxdelinquencyyear,censustractandblock
@@ -191,9 +248,19 @@ def split_year(values):
     except:
         return 0
     if value < 1950: return 1
-    if value < 1970: return 2
-    if value < 1990: return 3
-    if value < 2000: return 4
+    if value < 1980: return 2
+    if value < 2000: return 3
+    return 4
+
+def split_sqft(values):
+    try:
+        value = int(values[zcolumns["calculatedfinishedsquarefeet"]])
+    except:
+        return 0
+    if value < 1000: return 1
+    if value < 2000: return 2
+    if value < 3000: return 3
+    if value < 4000: return 4
     return 5
 
 class Node(object):
@@ -223,4 +290,21 @@ def find_node(index):
         node = node.children[(item,)]
     return node
 
-"hello"
+node = find_node((2,))
+node.sfun = split_sqft
+
+def load():
+    for parcelid in train_set:
+        node = root
+        if node.sfun is None:
+            if node.content is None:
+                node.content = set()
+            node.content.add(parcelid)
+        else:
+            values = train_data[parcelid]
+            cat = node.sfun(values)
+            if node.children is None:
+                node.children = {}
+            if (cat,) not in node.children:
+                nnode = Node()
+                node.children[(cat,)] = nnode
