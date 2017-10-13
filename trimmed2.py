@@ -1,8 +1,8 @@
 import numpy as np
 
 path = "/Programs/kaggle/zillow/"
-path = "/Users/T162880/Documents/Programs/zillow/"
 path = "/Users/apple/Documents/Programs/zillow/"
+path = "/Users/T162880/Documents/Programs/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -58,6 +58,27 @@ def bucketing(cat_func, delta):
     for item in result2:
         print(item)
 
+def bucketing2(cat_func, delta):
+    """
+    for continuous var
+    """
+    buckets = {}
+    for parcelid in trimmed_set:
+        index = cat_func(parcelid)
+        if index not in buckets:
+            buckets[index] = set()
+        buckets[index].add(parcelid)
+    result = [(key, value) for (key, value) in buckets.items()]
+    result.sort(key=lambda item: item[0])
+    result2 = []
+    for item in result:
+        error2 = [ delta[parcelid] for parcelid in item[1] ]
+        mean2 = np.mean(error2)
+        std2 = np.std(error2)
+        info = (item[0], len(error2), f7(mean2), f7(std2))
+        info = (item[0], int(mean2*10000), len(error2), f7(mean2), f7(std2))
+        print(info)
+
 delta_0 = train_error
 
 def f_0(values):
@@ -100,6 +121,63 @@ def cat_city(parcelid):
     except:
         return "0: no city"
     return city
+
+def cat_bedroom(parcelid):
+    try:
+        bedroom = train_data[parcelid][zcolumns["bedroomcnt"]]
+    except:
+        return "0: no count"
+    return bedroom
+
+def cat_bathroom(parcelid):
+    try:
+        bathroom = train_data[parcelid][zcolumns["bathroomcnt"]]
+    except:
+        return "0: no count"
+    return bathroom
+
+def cat_buildingquality(parcelid):
+    try:
+        value = train_data[parcelid][zcolumns["buildingqualitytypeid"]]
+    except:
+        return "0: no value"
+    return value
+
+def cat_firstfloor(parcelid):
+    try:
+        value = int(float(train_data[parcelid][zcolumns["finishedfloor1squarefeet"]]))
+    except:
+        return "0: no value"
+    for i in range(100):
+        begin = i * 200
+        end = (i+1) * 200
+        if value < end:
+            return "{}-{}".format(begin, end)
+    return "0: no value"
+
+def cat_sqft_15(parcelid):
+    try:
+        value = int(float(train_data[parcelid][zcolumns["finishedsquarefeet15"]]))
+    except:
+        return "0: no value"
+    for i in range(100):
+        begin = i * 200
+        end = (i+1) * 200
+        if value < end:
+            return "{}-{}".format(begin, end)
+    return "0: no value"
+
+def cat_lotsize(parcelid):
+    try:
+        value = int(float(train_data[parcelid][zcolumns["lotsizesquarefeet"]]))
+    except:
+        return "0: no value"
+    for i in range(100):
+        begin = i * 200
+        end = (i+1) * 200
+        if value < end:
+            return "{}-{}".format(begin, end)
+    return "0: no value"
 
 def explore():
     bucketing(cat_city, delta_4)
@@ -154,7 +232,7 @@ def delta_2_bucketing(values):
 
 def delta_3_bucketing(values):
     try:
-        city = train_data[parcelid][zcolumns["regionidcity"]]
+        city = values[zcolumns["regionidcity"]]
     except:
         return "zero"
     if city in [
@@ -171,130 +249,29 @@ def delta_3_bucketing(values):
             "45457",
             "24812",
             "33252",
-            "34543",
-            "51239",
-            "54722",
-            "25459",
-            "24832",
-            "32380",
-            "13693",
-            "37086",
-            "33612",
-            "20008",
-            "396054",
-            "12292",
-            "14542",
-            "38032",
-            "14634",
-            "53636",
-            "24174",
-            "24245",
-            "24384",
-            "50749",
-            "26964",
-            "4406",
-            "10608",
-            "11626",
-            "54053",
-            "5465",
-            "46098",
-            "33840",
-            "34780",
-            "44833",
-            "25458",
-            "48424",
-            "37015",
-            "17686",
-            "51617",
-            "50677",
-            "10723",
-            "32923",
-            "19177",
-            "45602",
-            "6021",
-            "30908",
-            "41673",
-            "10241",
-            "10774",
-            "42150",
-            "45888",
-            "118225",
-            "22827",
-            "9840",
-            "44116",
-            "51861",
-            "52842",
-            "17597",
-            "26483",
-            "39308",
-            "10734",
-            "37688",
-            "33837",
-            "17882",
-            "47762",
-            "45398",
-            "40081",
-            "14111",
-            "25953",
-            "12520",
-            "10389",
-            "46080",
-            "54212",
-            "13091",
-            "40009",
-            "53655",
-            "42967",
-            "118878",
-            "29712",
-            "6395",
-            "396053",
-            "55753",
-            "396551",
-            "53027",
-            "27183",
-            "32616",
-            "46314",
-            "27103",
-            "39306",
-            "26965",
-            "33311",
-            "396556",
-            "54352",
-            "54299",
-            "39076",
-            "47695",
-            "118895",
-            "33727",
-            "46178",
-            "29189",
-            "118914",
-            "47547",
-            "18098",
-            "15237",
-            "118694",
-            "118994",
-            "13716",
-            "16677",
-            "113576",
-            "30267",
-            "396550",
-            "116042",
-            "40110",
-            "54970",
-            "118217",
-            "18875",
-            "56780",
-            "114828",
-            "21778",
-            "30399",
-            "36502",
-            "113412",
-            "118875",
-            "16961",
-            "16389",
-            "272578",
                  ]:
         return city
+    return "zero"
+
+def delta_4_bucketing(values):
+    try:
+        bedroom = values[zcolumns["bedroomcnt"]]
+    except:
+        return "zero"
+    if bedroom in [
+            "5.0",
+            "1.0",
+            "0.0",
+                 ]:
+        return bedroom
+    return "zero"
+
+def delta_5_bucketing(values):
+    try:
+        value = int(float(values[zcolumns["lotsizesquarefeet"]]))
+    except:
+        return "zero"
+    if value >= 4600 and value < 8000: return "4600-8000"
     return "zero"
 
 def delta_buckets(delta, delta_bucketing):
@@ -314,24 +291,26 @@ def delta_buckets(delta, delta_bucketing):
         bucket_means[bucket] = mean
     return bucket_means
 
+
 delta_1_bucket_means = delta_buckets(delta_1, delta_1_bucketing)
-delta_2_bucket_means = delta_buckets(delta_2, delta_2_bucketing)
-delta_3_bucket_means = delta_buckets(delta_3, delta_3_bucketing)
-
-def f_1(values):
-    return delta_1_bucket_means[delta_1_bucketing(values)]
-
+def f_1(values): return delta_1_bucket_means[delta_1_bucketing(values)]
 delta_2 = { parcelid: delta_1[parcelid] - f_1(train_data[parcelid]) for parcelid in trimmed_set }
 
-def f_2(values):
-    return delta_2_bucket_means[delta_2_bucketing(values)]
-
+delta_2_bucket_means = delta_buckets(delta_2, delta_2_bucketing)
+def f_2(values): return delta_2_bucket_means[delta_2_bucketing(values)]
 delta_3 = { parcelid: delta_2[parcelid] - f_2(train_data[parcelid]) for parcelid in trimmed_set }
 
-def f_3(values):
-    return delta_3_bucket_means[delta_3_bucketing(values)]
-
+delta_3_bucket_means = delta_buckets(delta_3, delta_3_bucketing)
+def f_3(values): return delta_3_bucket_means[delta_3_bucketing(values)]
 delta_4 = { parcelid: delta_3[parcelid] - f_3(train_data[parcelid]) for parcelid in trimmed_set }
+
+delta_4_bucket_means = delta_buckets(delta_4, delta_4_bucketing)
+def f_4(values): return delta_4_bucket_means[delta_4_bucketing(values)]
+delta_5 = { parcelid: delta_4[parcelid] - f_4(train_data[parcelid]) for parcelid in trimmed_set }
+
+delta_5_bucket_means = delta_buckets(delta_5, delta_5_bucketing)
+def f_5(values): return delta_5_bucket_means[delta_5_bucketing(values)]
+delta_6 = { parcelid: delta_5[parcelid] - f_5(train_data[parcelid]) for parcelid in trimmed_set }
 
 
 def f(values):
