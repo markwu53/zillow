@@ -315,7 +315,7 @@ delta_6 = { parcelid: delta_5[parcelid] - f_5(train_data[parcelid]) for parcelid
 
 def f(values):
     #return f_0(values)
-    return f_0(values) + f_1(values) + f_2(values) + f_3(values)
+    return f_0(values) + f_1(values) + f_2(values) + f_3(values) + f_4(values) + f_5(values)
 
 def submit():
     with open(path+properties_2016) as fd, open(path+my_submission, "w") as fdw:
