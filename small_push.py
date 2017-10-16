@@ -1,9 +1,10 @@
 import numpy as np
 import random
+import time
 
-path = "/Programs/kaggle/zillow/"
 path = "/Users/T162880/Documents/Programs/zillow/"
 path = "/Users/apple/Documents/Programs/zillow/"
+path = "/Programs/kaggle/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -17,7 +18,6 @@ columns = zillow_columns.strip().split(sep=",")
 zcolumns = { value: index for (index, value) in enumerate(columns) }
 cv_count = 18000
 push_factor = 0.03
-search_step = 0.01
 
 def myint(value_str):
     try:
@@ -69,7 +69,7 @@ def train_cv_split():
     while len(rset) < cv_count:
         rset.add(random.randrange(len(trimmed_list)))
     cv_set = set([trimmed_list[i] for i in rset])
-    train_set = trimmed_set - cv_set
+    train_set = set([parcelid for parcelid in train_error if abs(train_error[parcelid] - .1) < .5]) - cv_set
     return train_set, cv_set
 
 def find_best_splitting_feature(residual):
@@ -86,16 +86,16 @@ def find_best_splitting_feature(residual):
         buckets_info = [np.sum([residual[parcelid]-residual_mean for parcelid in bucket]) for bucket in buckets]
         buckets_info = [ np.sum(buckets_info[:i+1]) for i in range(len(buckets_info)) ]
         argmax = np.argmax(np.abs(buckets_info))
-        feature_search_result.append((feature_name, buckets_info[argmax], argmax, len(feature_step), feature_step[argmax], buckets))
+        feature_search_result.append((feature_name, buckets_info[argmax], argmax, len(feature_step), feature_step[argmax]))
+    gains = [ abs(item[1]) for item in feature_search_result ]
+    selected_feature_index = np.argmax(gains)
+    splitting_index = feature_search_result[selected_feature_index][2]
     feature_search_result.sort(key=lambda item: abs(item[1]), reverse=True)
-    for item in feature_search_result: print(item[:-1])
-    item = feature_search_result[0]
-    argmax, buckets = item[2], item[-1]
-    left_set = set()
-    for i in range(argmax+1):
-        for parcelid in buckets[i]:
-            left_set.add(parcelid)
-    return left_set
+    for item in feature_search_result: print(item)
+    return selected_feature_index, splitting_index
+
+def logMessage(message):
+    print("[{}] {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), message))
 
 def train():
     residual = { parcelid: train_error[parcelid] for parcelid in train_set }
@@ -104,11 +104,19 @@ def train():
     iteration = 0
     while True:
         iteration += 1
-        print("doing {}".format(iteration))
-        left_set = find_best_splitting_feature(residual)
+        logMessage("doing {}".format(iteration))
+        selected_feature_index, splitting_index = find_best_splitting_feature(residual)
+        left_set = set()
+        for parcelid in train_set:
+            feature = features[selected_feature_index]
+            feature_value = feature[1](train_data[parcelid][zcolumns[feature[0]]])
+            splitting_point = feature[2][splitting_index]
+            if feature_value < splitting_point:
+                left_set.add(parcelid)
         right_set = train_set - left_set
         left_mean = np.mean([residual[parcelid] for parcelid in left_set])
         right_mean = np.mean([residual[parcelid] for parcelid in right_set])
+        approx_functions.append((selected_feature_index, splitting_index, left_mean, right_mean))
         for parcelid in residual:
             target = left_mean if parcelid in left_set else right_mean
             residual[parcelid] = residual[parcelid] - push_factor * target
@@ -116,7 +124,7 @@ def train():
         print(sme)
 
 train_error, train_data = load_train()
-trimmed_set = set([ parcelid for parcelid in train_error if abs(train_error[parcelid]-.1) < .5 ])
-trimmed_list = list(trimmed_set)
-#trimmed_set_mean = np.mean([ train_error[parcelid] for parcelid in trimmed_set ])
+trimmed_list = list(set([parcelid for parcelid in train_error if abs(train_error[parcelid] - .1) < .5]))
 train_set, cv_set = train_cv_split()
+approx_functions = []
+train()
