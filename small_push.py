@@ -5,6 +5,7 @@ import time
 path = "/Users/T162880/Documents/Programs/zillow/"
 path = "/Users/apple/Documents/Programs/zillow/"
 path = "/Programs/kaggle/zillow/"
+path = "/Users/Public/Documents/Kaggle/zillow/"
 properties_2016 = "properties_2016.csv"
 properties_2017 = "properties_2017.csv"
 train_2016 = "train_2016_v2.csv"
@@ -18,6 +19,8 @@ columns = zillow_columns.strip().split(sep=",")
 zcolumns = { value: index for (index, value) in enumerate(columns) }
 cv_count = 18000
 push_factor = 0.03
+function_export = "function_export.log"
+
 
 def myint(value_str):
     try:
@@ -116,7 +119,10 @@ def train():
         right_set = train_set - left_set
         left_mean = np.mean([residual[parcelid] for parcelid in left_set])
         right_mean = np.mean([residual[parcelid] for parcelid in right_set])
-        approx_functions.append((selected_feature_index, splitting_index, left_mean, right_mean))
+        result = (selected_feature_index, splitting_index, left_mean, right_mean)
+        approx_functions.append(result)
+        with open(path+function_export, "a") as fd:
+            fd.write("{}\n".format(result))
         for parcelid in residual:
             target = left_mean if parcelid in left_set else right_mean
             residual[parcelid] = residual[parcelid] - push_factor * target
@@ -124,7 +130,10 @@ def train():
         print(sme)
 
 train_error, train_data = load_train()
-trimmed_list = list(set([parcelid for parcelid in train_error if abs(train_error[parcelid] - .1) < .5]))
-train_set, cv_set = train_cv_split()
+trimmed_set = { parcelid for parcelid in train_error if abs(train_error[parcelid] - .1) < .5 }
+trimmed_list = list(trimmed_set)
+#train_set, cv_set = train_cv_split()
+train_set = trimmed_set
 approx_functions = []
+with open(path+function_export, "w") as fd: fd.write("")
 train()
