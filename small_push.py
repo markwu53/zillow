@@ -120,7 +120,7 @@ def train():
         iteration += 1
         logMessage("iteration {}".format(iteration))
         with open(path+train_log, "a") as fd:
-            fd.write("[{}] iteration {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), iteration))
+            fd.write("\n[{}] iteration {}\n".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), iteration))
         selected_feature_index, splitting_index = find_best_splitting_feature(residual)
         left_set = set()
         for parcelid in train_set:
